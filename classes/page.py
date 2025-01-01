@@ -1,21 +1,50 @@
 # file: classes/page.py
 
-from typing import List, Optional, Tuple
-from .button import Button  # or your new AsyncButton, if you rename the file
+from typing import List, Optional, Tuple, Any
+
+from .base import InteractableItem
+from .button import Button
 from .dial import Dial
 from .led import Led
+from StreamDeck.Devices.StreamDeck import StreamDeck
+
+
 
 class Page:
     """
     A single "screen" or layout of Buttons, Dials, and LEDs.
     """
-    def __init__(self, name: str, parent: Optional['Page'] = None):
+    def __init__(self, page_manager, name: str, parent: Optional['Page'] = None):
+        self.super = page_manager
         self.name = name
         self.parent = parent
         self.children: List[Page] = []
-        self.buttons: List[List[Optional[Button]]] = [[], []]
-        self.dials: List[Dial] = []
-        self.leds: List[Led] = []
+        self.siblings: List[Page] = []
+        num_button_rows: int = self.super.deck.KEY_ROWS
+        num_button_cols: int = self.super.deck.KEY_COLS
+        self.buttons: List[List[Optional[Button]]] = [[None] * num_button_cols for _ in range(num_button_rows)]
+        num_dials = self.super.deck.DIAL_COUNT
+        self.dials: List[Optional[Dial]] = [None] * num_dials
+        num_led_keys = self.super.deck.TOUCH_KEY_COUNT
+        self.leds: List[Led] = [None] * num_led_keys
+
+    def create_child(self, name: str, icon: Optional[str], coordinates: tuple[int,int]) -> Optional['Page']:
+        x,y = coordinates
+        max_y, max_x = ((self.super.deck.KEY_COUNT // self.super.deck.KEY_ROWS), self.super.deck.KEY_ROWS)
+        if x >= max_x or y >= max_y:
+            print("Your coordinates exceeds the screen's maximum possible size.")
+            print(x, ">=", self.super.deck.KEY_COLS, " or ", y, ">=", self.super.deck.KEY_ROWS)
+            return None
+        elif self.buttons[x][y] is not None:
+            return None
+        new_page = Page(self.super, name, self)
+        self.children.append(new_page)
+        back_button = Button((0,0),new_page, "Icons/arrow-left-top.svg", self.name)
+        back_button.set_async_function(lambda: self.super.go_to_page(self))
+        new_page.buttons[0][0] = back_button
+        new_page_button = Button((x,y),self, icon,name)
+        new_page_button.set_async_function(lambda: self.super.go_to_page(new_page))
+        return new_page
 
     def add_child(self, child_page: 'Page'):
         self.children.append(child_page)

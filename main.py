@@ -1,8 +1,8 @@
 import os
 import sys
 import io
-import logging
 import asyncio
+from logger import logger
 
 import cairosvg
 from PIL import Image, ImageChops
@@ -12,14 +12,12 @@ from StreamDeck.Devices.StreamDeck import TouchscreenEventType, DialEventType
 from classes.button import Button
 from classes.page import Page
 from classes.page_manager import PageManager
-from build_pages import build_all_pages
 from functions.audio_functions import volume_up, volume_down, toggle_mic
 from functions.system_functions import open_terminal, run_python_code
 from functions.video_functions import open_obs, toggle_recording
 import pyautogui
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+
 
 manager = PageManager()
 
@@ -98,76 +96,6 @@ async def on_touch_event(deck, event_type, value):
     elif event_type == TouchscreenEventType.LONG:
         logger.info(f"Long press at x={value['x']}, y={value['y']}")
 
-def wire_up_buttons(pages_dict):
-    """
-    Here we attach the logic for each button that navigates or does actions.
-    pages_dict is the dict from build_all_pages().
-    """
-    main_page = pages_dict["main"]
-    content_page = pages_dict["content"]
-    settings_page = pages_dict["settings"]
-    sound_page = pages_dict["sound"]
-    video_page = pages_dict["video"]
-    display_page = pages_dict["display"]
-
-    # MAIN PAGE
-    content_btn = main_page.buttons[0][3]
-    def go_content():
-        manager.go_to_page(content_page)
-    content_btn.set_async_function(go_content)
-
-    settings_btn = main_page.buttons[1][3]
-    def go_settings():
-        manager.go_to_page(settings_page)
-    settings_btn.set_async_function(go_settings)
-
-    # CONTENT PAGE
-    back_main = content_page.buttons[0][0]
-    back_main.set_async_function(lambda: manager.go_to_page(main_page))
-
-    youtube_btn = content_page.buttons[0][3]
-    youtube_btn.set_async_function(lambda: print("YouTube logic here."))
-
-    twitch_btn = content_page.buttons[1][3]
-    twitch_btn.set_async_function(lambda: print("Twitch logic here."))
-
-    # SETTINGS PAGE
-    back_main2 = settings_page.buttons[0][0]
-    back_main2.set_async_function(lambda: manager.go_to_page(main_page))
-
-    sound_btn = settings_page.buttons[0][3]
-    sound_btn.set_async_function(lambda: manager.go_to_page(sound_page))
-
-    video_btn = settings_page.buttons[1][3]
-    video_btn.set_async_function(lambda: manager.go_to_page(video_page))
-
-    display_btn = settings_page.buttons[1][2]
-    display_btn.set_async_function(lambda: manager.go_to_page(display_page))
-
-    # SOUND PAGE
-    back_settings = sound_page.buttons[0][0]
-    back_settings.set_async_function(lambda: manager.go_to_page(settings_page))
-
-    toggle_state = sound_page.buttons[0][3]
-    toggle_state.set_async_function(lambda: print("Toggle local/broadcast."))
-
-    toggle_output = sound_page.buttons[1][3]
-    toggle_output.set_async_function(lambda: print("Toggle output."))
-
-    # VIDEO PAGE
-    back_settings2 = video_page.buttons[0][0]
-    back_settings2.set_async_function(lambda: manager.go_to_page(settings_page))
-
-    obs_btn = video_page.buttons[0][3]
-    obs_btn.set_async_function(lambda: print("Open OBS or call open_obs() here."))
-
-    toggle_cam = video_page.buttons[1][3]
-    toggle_cam.set_async_function(lambda: print("Toggle Virtual Camera."))
-
-    # DISPLAY PAGE
-    back_settings3 = display_page.buttons[0][0]
-    back_settings3.set_async_function(lambda: manager.go_to_page(settings_page))
-
 def initialize_and_wire_buttons(deck):
     """
     Initializes the pages and buttons, and attaches the logic for navigation and actions.
@@ -190,17 +118,55 @@ def initialize_and_wire_buttons(deck):
     ###
     # MAIN PAGE
     ###
-    main_page = Page("Main")
-    main_page.buttons = [
-        [None, None, None, None],
-        [None, None, None, None]
-    ]
+    main_page = Page(manager,"Main")
 
-    content_btn = Button(title="Content")
+    content_page = main_page.create_child(
+        "Content",
+        "Icons/movie-open-outline.svg",
+        (0,3))
+    settings_page = main_page.create_child(
+        "Settings",
+        "Icons/cog.svg",
+        (1,3))
+
+    sound_page = settings_page.create_child(
+        "Sound",
+        "Icons/speaker-multiple.svg",
+        (0,3)
+    )
+
+    mute_button = Button(
+        (0,3),
+        sound_page,
+        "Icons/volume-high.svg",
+        "Mute"
+    )
+    mute_button.states.add_state(
+        "Icons/volume-mute.svg",
+        "Unmute"
+    )
+    mute_button.set_async_function(toggle_mic)
+    sound_page.buttons[0][3] = mute_button
+
+    video_page = settings_page.create_child(
+         "Video",
+        "Icons/camera.svg",
+        (1,3)
+        )
+
+    display_page = settings_page.create_child(
+        "Display",
+        "Icons/monitor.svg",
+        (1,2)
+    )
+
+
+    '''
+    content_btn = Button(main_page,title="Content")
     content_btn.image = "Icons/movie-open-outline.svg"
     main_page.buttons[0][3] = content_btn
 
-    settings_btn = Button(title="Settings")
+    settings_btn = Button(main_page,title="Settings")
     settings_btn.image = "Icons/cog.svg"
     main_page.buttons[1][3] = settings_btn
 
@@ -221,7 +187,7 @@ def initialize_and_wire_buttons(deck):
     back_main = Button(title="Main")
     back_main.image = "Icons/arrow-left-top.svg"
     content_page.buttons[0][0] = back_main
-
+    
 
     ###########
     # YouTube #
@@ -274,7 +240,6 @@ def initialize_and_wire_buttons(deck):
     back_main2 = Button(title="Main")
     back_main2.image = "Icons/arrow-left-top.svg"
     settings_page.buttons[0][0] = back_main2
-
     sound_btn = Button(title="Sound")
     sound_btn.image = "Icons/speaker-multiple.svg"
     settings_page.buttons[0][3] = sound_btn
@@ -353,6 +318,7 @@ def initialize_and_wire_buttons(deck):
     obs_btn.set_async_function(lambda: print("Open OBS or call open_obs() here."))
     toggle_cam.set_async_function(lambda: print("Toggle Virtual Camera."))
     back_settings3.set_async_function(lambda: manager.go_to_page(settings_page))
+    '''
 
     return {
         "main": main_page,
@@ -389,7 +355,7 @@ async def main():
     pages_dict = initialize_and_wire_buttons(deck)
     # The 'main' page
     main_page = pages_dict["main"]
-    manager.set_current_page(main_page)
+    await manager.set_current_page(main_page)
 
     logger.info("Ready. Press Ctrl+C to exit.")
     try:

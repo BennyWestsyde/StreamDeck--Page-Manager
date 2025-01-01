@@ -14,23 +14,23 @@ class PageManager:
     def set_deck(self, deck):
         self.deck = deck
 
-    def set_current_page(self, page: Page):
+    async def set_current_page(self, page: Page):
         self.current_page = page
         # Instead of just printing, we call a new method that updates the device icons
-        self.render_page(page)
+        await self.render_page(page)
 
-    def go_to_page(self, page: Page):
-        self.set_current_page(page)
+    async def go_to_page(self, page: Page):
+        await self.set_current_page(page)
 
-    def go_back(self):
+    async def go_back(self):
         if self.current_page and self.current_page.parent:
-            self.set_current_page(self.current_page.parent)
+            await self.set_current_page(self.current_page.parent)
 
     async def handle_event(self, event: Tuple):
         if self.current_page is not None:
             await self.current_page.handle_input_async(event)
 
-    def render_page(self, page: Page):
+    async def render_page(self, page: Page):
         """Clear all keys, then set icons only for the new page's buttons."""
         if not self.deck:
             # If we have no deck, we can't render. Just do a fallback print.
@@ -64,7 +64,12 @@ class PageManager:
                     # We'll reuse your logic to set an icon. Let's call
                     # a helper function "render_key_icon" that sets the icon 
                     # at (row_idx, col_idx).
-                    self.render_key_icon(row_idx, col_idx, button.image)
+                    await button.render()
+                    #self.render_key_icon(row_idx, col_idx, button.image)
+
+    async def render_current_page(self):
+        if self.current_page:
+            await self.render_page(self.current_page)
 
     def render_key_icon(self, row, col, svg_path):
         """

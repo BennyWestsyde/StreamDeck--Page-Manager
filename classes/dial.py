@@ -6,8 +6,10 @@ class Dial(InteractableItem):
     """
     A dial that might be pressed or rotated.
     """
-    def __init__(self, image=None, title=None):
-        super().__init__(image=image, title=title)
+    def __init__(self,position: tuple[int,int],page, image=None, title=None):
+        self.super = page
+        super().__init__(position,page,image=image, title=title)
+        self.super.buttons[position] = self
         self._rotation_function: Optional[Callable[..., Any]] = None
         self._rotation_input: Optional[Dict] = None
 

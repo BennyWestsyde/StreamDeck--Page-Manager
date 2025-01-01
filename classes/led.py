@@ -6,8 +6,10 @@ class Led(InteractableItem):
     """
     LED-based item for taps/swipes.
     """
-    def __init__(self, image=None, title=None):
-        super().__init__(image=image, title=title)
+    def __init__(self,position: tuple[int,int],page, image=None, title=None):
+        self.super = page
+        super().__init__(position,page,image=image, title=title)
+        self.super.buttons[position] = self
         self._tap_function: Optional[Callable[..., Any]] = None
         self._tap_input: Optional[Dict] = None
         self._swipe_function: Optional[Callable[..., Any]] = None
