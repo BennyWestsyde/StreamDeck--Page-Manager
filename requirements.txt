@@ -1,0 +1,98 @@
+This is the requirements file for the Streamdeck project. This file will contain all the requirements for the project.
+
+Hardware:
+    This program is being written in python and will be run on a Ubuntu 24.04 machine. 
+    The Streamdeck is a Streamdeck+ with:
+        - 8 buttons (4 buttons wide, 2 buttons tall)
+        - 1 led screen (4 buttons wide, 1 button tall)
+        - 4 Rotational dials that can additionally be pressed
+    This structure should be adapted with a class structure to allow for easy access to the buttons and dials.
+    ```
+    class Button:
+        def __init__(self):
+            self.image = None # The image that is displayed on the button
+            self.title = None # The title that is displayed on the button
+            self.title_position = None # The position of the title on the button (top, middle, bottom)
+            self.function = None # The function that is called when the button is pressed (this might need to be its own classtype so that we can define what kinds of functions can be called)
+            self.function_input = None # The input that is passed to the function, this should coorespond to the state of the button (pressed, released, etc)
+    ```
+    ```
+    class Dial:
+        def __init__(self):
+            self.image = None # The image that is displayed on the touch screen above the dial
+            self.title = None # The title that is displayed on the touch screen above the dial
+            self.title_position = None # The position of the title on the touch screen above the dial (top, middle, bottom)
+            self.function = None # The function that is called when the dial is turned (this might need to be its own classtype so that we can define what kinds of functions can be called)
+            self.function_input = None # The input that is passed to the function, this should coorespond to the state of the dial (turned left, turned right, etc)
+            self.press_function = None # The function that is called when the dial is pressed (this might need to be its own classtype so that we can define what kinds of functions can be called)
+            self.press_function_input = None # The input that is passed to the function, this should coorespond to the state of the dial (pressed, released, etc)
+    ```
+    hmmm i am noticing overlap, perhaps we could have a button superclass that the dial and button classes inherit from?
+    ```
+    class Led:
+        def __init__(self):
+            self.image = None # The image that is displayed on the led screen
+            self.title = None # The title that is displayed on the led screen
+            self.title_position = None # The position of the title on the led screen (top, middle, bottom)
+            self.tap_function = None # The function that is called when the led screen is tapped (this might need to be its own classtype so that we can define what kinds of functions can be called)
+            self.tap_function_input = None # The input that is passed to the function, this should coorespond to the state of the led screen (tapped, released, etc)
+            self.swipe_function = None # The function that is called when the led screen is swiped (this might need to be its own classtype so that we can define what kinds of functions can be called)
+            self.swipe_function_input = None # The input that is passed to the function, this should coorespond to the state of the led screen (swiped left, swiped right, etc)
+    ```
+    ```
+    class Page:
+        def __init__(self):
+            self.buttons = [[],[]] # A list of two lists of four buttons(4x2) that are on the page
+            self.dials = [] # A list of dials that are on the page
+            self.leds = [] # A list of leds that are on the page
+    ```
+    
+    pages should also be able to have siblings (or maybe states would be better?) such that you can swipe left or right on the led to go between different states of the same page (say i want to go to the sound page and start on the local sound settings page and then swipe right to go to the output/broadcast sound settings page)
+
+
+Required Structure:
+    The streamdeck will be arranged in the format of pages. Each page will have its own functions and purpose and these pages will be nested within each other.
+    The nesting of the pages will be as follows:
+        - Main Page
+            - Page 1: Content Page
+                - Page 1.A: Youtube Page
+                    - Sends keyboard strokes that are bound to the youtube hotkeys
+                - Page 1.B: Twitch Page
+                    - Sends keyboard strokes that are bound to the twitch hotkeys
+            - Page 2: Settings Page
+                - Page 2.A: Sound Settings
+                    - Page 2.A.1: Local Sound Settings (Sound I can hear)
+                        - Sends commands to pipewire/pulseaudio/whatever to allow for controlling sound that i can hear (my mic, my desktop audio, voice chat apps like discord, global local audio) as well as toggle between different audio outputs (headphones, speakers, etc)
+                    - Page 2.A.2: Output/Broadcast Sound Settings (Sound that is broadcasted)
+                        - Sends commands to pipewire/pulseaudio/whatever to allow for controlling sound that is broadcasted (my mic, my desktop audio, voice chat apps like discord, global broadcast audio) as well as toggle between different audio outputs (headphones, speakers, etc)
+                - Page 2.B: Video Settings
+                    - Opens OBS and allows for controlling the video settings (scene switching, recording, streaming, starting/stopping virtual camera, etc)
+                - Page 2.C: Display Settings
+                    - Opens the display settings and allows for controlling the display settings (brightness, output screen, etc)
+            - Page 3: Code Page
+                - Page 3.A: Python Page
+                    - Opens a terminal and allows for running python code
+                - Page 3.B: C++ Page
+                    - Opens a terminal and allows for running C++ code
+                - Page 3.C: Java Page
+                    - Opens a terminal and allows for running Java code
+
+
+main 
+  - [0,3] content
+    - [0,0] main
+    - [0,3] youtube
+    - [1,3] twitch
+  - [1,3] settings
+    - [0,0] main
+    - [0,3] sound
+      - [0,0] settings
+      - [0,3] toggle state (local, broadcast)
+      - [1,3] toggle output
+    - [1,3] video
+      - [0,0] settings
+      - [0,3] open OBS
+      - [1,3] toggle virtual camera
+    - [2,3] display
+        - [0,0] settings
+        
