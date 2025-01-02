@@ -1,5 +1,7 @@
 # file: classes/page_manager.py
 from typing import Optional, Tuple
+
+from logger import logger
 from .page import Page
 
 class PageManager:
@@ -34,7 +36,7 @@ class PageManager:
         """Clear all keys, then set icons only for the new page's buttons."""
         if not self.deck:
             # If we have no deck, we can't render. Just do a fallback print.
-            print(f"Displaying page: {page.name} (no deck connected)")
+            logger.error("No deck set, can't render page.")
             return
 
         # 1) Clear all keys (in a 4x2 device, that's 8 keys).
@@ -56,7 +58,7 @@ class PageManager:
         #    We'll do something similar to your set_key_image function, but we
         #    only do it if the button has an image path, etc.
         #    For each row, col in page.buttons, set that key's image if any.
-        print(f"Displaying page: {page.name}")
+        logger.info(f"Rendering page: {page.name}")
 
         for row_idx, row_of_buttons in enumerate(page.buttons):
             for col_idx, button in enumerate(row_of_buttons):
@@ -83,7 +85,7 @@ class PageManager:
 
         key_index = row * 4 + col
         if not os.path.exists(svg_path):
-            print(f"[WARN] Missing icon: {svg_path}")
+            logger.error(f"SVG file not found: {svg_path}")
             return
 
         # Convert SVG -> PNG

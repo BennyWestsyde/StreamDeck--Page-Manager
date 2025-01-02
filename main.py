@@ -1,23 +1,18 @@
+import asyncio
+import io
 import os
 import sys
-import io
-import asyncio
-from logger import logger
 
 import cairosvg
 from PIL import Image, ImageChops
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices.StreamDeck import TouchscreenEventType, DialEventType
 
-from classes.button import Button
+from classes.base import ItemState
 from classes.page import Page
 from classes.page_manager import PageManager
-from functions.audio_functions import volume_up, volume_down, toggle_mic
-from functions.system_functions import open_terminal, run_python_code
-from functions.video_functions import open_obs, toggle_recording
-import pyautogui
-
-
+from functions.audio_functions import toggle_mic, control_volume
+from logger import logger
 
 manager = PageManager()
 
@@ -135,18 +130,39 @@ def initialize_and_wire_buttons(deck):
         (0,3)
     )
 
-    mute_button = Button(
+    mute_button = sound_page.create_button(
         (0,3),
-        sound_page,
-        "Icons/volume-high.svg",
-        "Mute"
+        [
+            ItemState(
+            "Icons/volume-high.svg",
+            "Mute"
+            ),
+            ItemState(
+            "Icons/volume-mute.svg",
+                "Unmute"
+            )
+        ],
+        toggle_mic
     )
-    mute_button.states.add_state(
-        "Icons/volume-mute.svg",
-        "Unmute"
+
+    volume_dial = sound_page.create_dial(
+        1,
+        [
+            ItemState(
+                "Icons/volume-minus.svg",
+                "Volume down"
+            ),
+            ItemState(
+                "Icons/volume-medium.svg",
+                "Volume"
+            ),
+            ItemState(
+                "Icons/volume-plus.svg",
+                "Volume up"
+            )
+        ],
+        control_volume
     )
-    mute_button.set_async_function(toggle_mic)
-    sound_page.buttons[0][3] = mute_button
 
     video_page = settings_page.create_child(
          "Video",
@@ -160,165 +176,6 @@ def initialize_and_wire_buttons(deck):
         (1,2)
     )
 
-
-    '''
-    content_btn = Button(main_page,title="Content")
-    content_btn.image = "Icons/movie-open-outline.svg"
-    main_page.buttons[0][3] = content_btn
-
-    settings_btn = Button(main_page,title="Settings")
-    settings_btn.image = "Icons/cog.svg"
-    main_page.buttons[1][3] = settings_btn
-
-
-    ###
-    # CONTENT PAGE
-    ###
-    content_page = Page("Content", parent=main_page)
-    content_page.buttons = [
-        [None, None, None, None],
-        [None, None, None, None]
-    ]
-
-    
-    ########
-    # Back #
-    ########
-    back_main = Button(title="Main")
-    back_main.image = "Icons/arrow-left-top.svg"
-    content_page.buttons[0][0] = back_main
-    
-
-    ###########
-    # YouTube #
-    ###########
-    youtube_btn = Button(title="YouTube", image="Icons/youtube.svg")
-    content_page.buttons[0][3] = youtube_btn
-
-    ###
-    # YOUTUBE PAGE
-    ###
-    youtube_page = Page("YouTube", parent=content_page)
-    youtube_page.buttons = [
-        [None, None, None, None],
-        [None, None, None, None]
-    ]
-
-    ########
-    # Back #
-    ########
-    back_content = Button(title="Content")
-    back_content.image = "Icons/arrow-left-top.svg"
-    back_content.set_async_function(lambda: manager.go_to_page(content_page))
-    youtube_page.buttons[0][0] = back_content
-
-
-    ########
-    # Play #
-    ########
-    play_btn = Button(title="Play", image="Icons/play.svg")
-    play_btn.states.add_state("Icons/pause.svg", "Pause")
-    play_btn.set_async_function(lambda: pyautogui.press("space"))
-    youtube_page.buttons[0][3] = play_btn
-
-    ########
-    # Stop #
-    ########
-    stop_btn = Button(title="Pause")
-    stop_btn.image = "Icons/stop.svg"
-    youtube_page.buttons[1][3] = stop_btn
-
-    twitch_btn = Button(title="Twitch")
-    content_page.buttons[1][3] = twitch_btn
-
-    settings_page = Page("Settings", parent=main_page)
-    settings_page.buttons = [
-        [None, None, None, None],
-        [None, None, None, None]
-    ]
-
-    back_main2 = Button(title="Main")
-    back_main2.image = "Icons/arrow-left-top.svg"
-    settings_page.buttons[0][0] = back_main2
-    sound_btn = Button(title="Sound")
-    sound_btn.image = "Icons/speaker-multiple.svg"
-    settings_page.buttons[0][3] = sound_btn
-
-    video_btn = Button(title="Video")
-    video_btn.image = "Icons/camera.svg"
-    settings_page.buttons[1][3] = video_btn
-
-    display_btn = Button(title="Display")
-    display_btn.image = "Icons/monitor.svg"
-    settings_page.buttons[1][2] = display_btn
-
-    sound_page = Page("Sound", parent=settings_page)
-    sound_page.buttons = [
-        [None, None, None, None],
-        [None, None, None, None]
-    ]
-
-    back_settings = Button(title="Settings")
-    back_settings.image = "Icons/arrow-left-top.svg"
-    sound_page.buttons[0][0] = back_settings
-
-    toggle_state = Button(title="Local/Broadcast")
-    sound_page.buttons[0][3] = toggle_state
-
-    toggle_output = Button(title="Toggle Output")
-    sound_page.buttons[1][3] = toggle_output
-
-    video_page = Page("Video", parent=settings_page)
-    video_page.buttons = [
-        [None, None, None, None],
-        [None, None, None, None]
-    ]
-
-    back_settings2 = Button(title="Settings")
-    back_settings2.image = "Icons/arrow-left-top.svg"
-    video_page.buttons[0][0] = back_settings2
-
-    obs_btn = Button(title="Open OBS")
-    video_page.buttons[0][3] = obs_btn
-
-    toggle_cam = Button(title="Virtual Cam")
-    video_page.buttons[1][3] = toggle_cam
-
-    display_page = Page("Display", parent=settings_page)
-    display_page.buttons = [
-        [None, None, None, None],
-        [None, None, None, None]
-    ]
-
-    back_settings3 = Button(title="Settings")
-    back_settings3.image = "Icons/arrow-left-top.svg"
-    display_page.buttons[0][0] = back_settings3
-
-    # Link pages
-    main_page.add_child(content_page)
-    main_page.add_child(settings_page)
-    settings_page.add_child(sound_page)
-    settings_page.add_child(video_page)
-    settings_page.add_child(display_page)
-
-    # Wire up button actions
-    content_btn.set_async_function(lambda: manager.go_to_page(content_page))
-    settings_btn.set_async_function(lambda: manager.go_to_page(settings_page))
-    back_main.set_async_function(lambda: manager.go_to_page(main_page))
-    youtube_btn.set_async_function(lambda: manager.go_to_page(youtube_page))
-    twitch_btn.set_async_function(lambda: print("Twitch logic here."))
-    back_main2.set_async_function(lambda: manager.go_to_page(main_page))
-    sound_btn.set_async_function(lambda: manager.go_to_page(sound_page))
-    video_btn.set_async_function(lambda: manager.go_to_page(video_page))
-    display_btn.set_async_function(lambda: manager.go_to_page(display_page))
-    back_settings.set_async_function(lambda: manager.go_to_page(settings_page))
-    toggle_state.set_async_function(lambda: print("Toggle local/broadcast."))
-    toggle_output.set_async_function(lambda: print("Toggle output."))
-    back_settings2.set_async_function(lambda: manager.go_to_page(settings_page))
-    obs_btn.set_async_function(lambda: print("Open OBS or call open_obs() here."))
-    toggle_cam.set_async_function(lambda: print("Toggle Virtual Camera."))
-    back_settings3.set_async_function(lambda: manager.go_to_page(settings_page))
-    '''
 
     return {
         "main": main_page,
